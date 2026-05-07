@@ -64,6 +64,32 @@ export function PriceChart({
         borderColor: "rgba(75, 85, 99, 0.4)",
         timeVisible: true,
         secondsVisible: timeframe === "1m",
+        // Mostrar timestamps en zona horaria local del usuario
+        tickMarkFormatter: (time: number) => {
+          const d = new Date(time * 1000);
+          if (timeframe === "1h") {
+            return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+          }
+          return d.toLocaleTimeString("es-AR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: timeframe === "1m" ? "2-digit" : undefined,
+          });
+        },
+      },
+      localization: {
+        locale: "es-AR",
+        timeFormatter: (time: number) => {
+          const d = new Date(time * 1000);
+          return d.toLocaleString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+        },
       },
       width: containerRef.current.clientWidth,
       height,
