@@ -114,8 +114,6 @@ export function TradingView({ coin, initialPrice }: TradingViewProps) {
           symbol={coin.symbol}
           initialParams={params}
           timeframe={timeframe}
-          liveUpdate
-          persistTicks
           height={500}
           onPriceUpdate={setPrice}
         />

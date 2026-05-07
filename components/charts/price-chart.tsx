@@ -11,55 +11,37 @@ import {
   type CandlestickData,
   type Time,
 } from "lightweight-charts";
-import {
-  generateTick,
-  alignTimestamp,
-  dbRowToCandle,
-  type CoinParams,
-  type Candle,
-} from "@/lib/price-engine";
-import { recordTickAction } from "@/app/actions/coins";
+import { dbRowToCandle, alignTimestamp, type CoinParams } from "@/lib/price-engine";
 
 interface PriceChartProps {
   coinId: string;
   symbol: string;
   initialParams: CoinParams;
   timeframe?: "1m" | "5m" | "15m" | "1h";
-  /** Si está en true, el cliente actualiza el precio en tiempo real (motor) */
-  liveUpdate?: boolean;
-  /** Si está en true, escribe los ticks a la DB cada N segundos */
-  persistTicks?: boolean;
   height?: number;
   onPriceUpdate?: (price: number) => void;
 }
 
-const TICK_INTERVAL_MS = 1500; // un tick cada 1.5 segundos visualmente
-const PERSIST_INTERVAL_MS = 5000; // graba en DB cada 5 segundos
-
+/**
+ * Gráfico de precios.
+ * Escucha cambios en `coins.current_price` vía Supabase Realtime.
+ * Cuando llega un precio nuevo, actualiza la vela actual en pantalla.
+ * El motor real corre en el servidor (pg_cron), no en el cliente.
+ */
 export function PriceChart({
   coinId,
   symbol,
   initialParams,
   timeframe = "1m",
-  liveUpdate = true,
-  persistTicks = false,
   height = 400,
   onPriceUpdate,
 }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const paramsRef = useRef<CoinParams>(initialParams);
   const lastCandleRef = useRef<CandlestickData<Time> | null>(null);
-  const lastPersistedRef = useRef<number>(0);
 
   const [loading, setLoading] = useState(true);
-  const [currentPrice, setCurrentPrice] = useState<number>(initialParams.current_price);
-
-  // Update params ref si cambian props
-  useEffect(() => {
-    paramsRef.current = { ...initialParams, current_price: currentPrice };
-  }, [initialParams, currentPrice]);
 
   // Setup chart
   useEffect(() => {
@@ -104,7 +86,6 @@ export function PriceChart({
     chartRef.current = chart;
     seriesRef.current = series;
 
-    // Resize handler
     const resize = () => {
       if (containerRef.current) chart.resize(containerRef.current.clientWidth, height);
     };
@@ -131,12 +112,14 @@ export function PriceChart({
         .select("timestamp, open, high, low, close, volume")
         .eq("coin_id", coinId)
         .eq("timeframe", timeframe)
-        .order("timestamp", { ascending: true })
+        .order("timestamp", { ascending: false })
         .limit(500);
 
       if (cancelled || !seriesRef.current) return;
 
-      const candles: CandlestickData<Time>[] = (rows || []).map((r: any) => {
+      // Vienen en desc, los doy vuelta para que estén en asc
+      const ordered = (rows || []).slice().reverse();
+      const candles: CandlestickData<Time>[] = ordered.map((r: any) => {
         const c = dbRowToCandle(r);
         return {
           time: c.time as Time,
@@ -150,8 +133,6 @@ export function PriceChart({
       seriesRef.current.setData(candles);
       if (candles.length > 0) {
         lastCandleRef.current = candles[candles.length - 1];
-        const last = candles[candles.length - 1];
-        setCurrentPrice(last.close);
       }
       chartRef.current?.timeScale().fitContent();
       setLoading(false);
@@ -163,58 +144,63 @@ export function PriceChart({
     };
   }, [coinId, timeframe]);
 
-  // Loop del motor en cliente
+  // Suscribirse a Realtime: cambios en coins.current_price
   useEffect(() => {
-    if (!liveUpdate) return;
+    const supabase = createClient();
 
-    const interval = setInterval(() => {
-      if (!seriesRef.current) return;
+    const channel = supabase
+      .channel(`coin-price-${coinId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "coins",
+          filter: `id=eq.${coinId}`,
+        },
+        (payload: any) => {
+          if (!seriesRef.current) return;
 
-      const tick = generateTick(paramsRef.current);
-      const newPrice = tick.price;
+          const newPrice = Number(payload.new.current_price);
+          if (!newPrice || isNaN(newPrice)) return;
 
-      const aligned = alignTimestamp(tick.timestamp, timeframe);
-      const time = (Math.floor(aligned.getTime() / 1000)) as Time;
+          const aligned = alignTimestamp(new Date(), timeframe);
+          const time = Math.floor(aligned.getTime() / 1000) as Time;
 
-      // Si cae en la misma vela actual, actualizo close, high, low
-      if (lastCandleRef.current && lastCandleRef.current.time === time) {
-        const c = lastCandleRef.current;
-        const updated: CandlestickData<Time> = {
-          time: c.time,
-          open: c.open,
-          high: Math.max(c.high, newPrice),
-          low: Math.min(c.low, newPrice),
-          close: newPrice,
-        };
-        lastCandleRef.current = updated;
-        seriesRef.current.update(updated);
-      } else {
-        // Nueva vela
-        const newCandle: CandlestickData<Time> = {
-          time,
-          open: lastCandleRef.current?.close ?? newPrice,
-          high: newPrice,
-          low: newPrice,
-          close: newPrice,
-        };
-        lastCandleRef.current = newCandle;
-        seriesRef.current.update(newCandle);
-      }
+          // Si cae en la misma vela actual → update
+          if (lastCandleRef.current && lastCandleRef.current.time === time) {
+            const c = lastCandleRef.current;
+            const updated: CandlestickData<Time> = {
+              time: c.time,
+              open: c.open,
+              high: Math.max(c.high, newPrice),
+              low: Math.min(c.low, newPrice),
+              close: newPrice,
+            };
+            lastCandleRef.current = updated;
+            seriesRef.current.update(updated);
+          } else {
+            // Nueva vela
+            const newCandle: CandlestickData<Time> = {
+              time,
+              open: lastCandleRef.current?.close ?? newPrice,
+              high: newPrice,
+              low: newPrice,
+              close: newPrice,
+            };
+            lastCandleRef.current = newCandle;
+            seriesRef.current.update(newCandle);
+          }
 
-      setCurrentPrice(newPrice);
-      onPriceUpdate?.(newPrice);
+          onPriceUpdate?.(newPrice);
+        }
+      )
+      .subscribe();
 
-      // Persistir cada N ms
-      if (persistTicks && Date.now() - lastPersistedRef.current > PERSIST_INTERVAL_MS) {
-        lastPersistedRef.current = Date.now();
-        recordTickAction(coinId, newPrice).catch(() => {
-          // ignore
-        });
-      }
-    }, TICK_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [liveUpdate, persistTicks, coinId, timeframe, onPriceUpdate]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [coinId, timeframe, onPriceUpdate]);
 
   return (
     <div className="relative">

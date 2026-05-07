@@ -67,15 +67,13 @@ export function CoinPreview({ coin }: { coin: any }) {
         symbol={coin.symbol}
         initialParams={params}
         timeframe={timeframe}
-        liveUpdate
-        persistTicks
         height={350}
         onPriceUpdate={setPrice}
       />
 
       <p className="text-xs text-muted-foreground">
-        💡 El gráfico se actualiza con el algoritmo en tiempo real. Los precios se persisten
-        en DB cada 5 segundos. Cambia los parámetros abajo y guarda para ver el efecto.
+        💡 El motor corre en el servidor 24/7 (1 tick/segundo). Todos los alumnos
+        ven exactamente lo mismo. Cambia los parámetros abajo y guarda para ver el efecto.
       </p>
     </div>
   );
