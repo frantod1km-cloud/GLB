@@ -77,21 +77,25 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-card border border-border/60 rounded-lg p-6">
-          <h2 className="font-semibold mb-3">Próximos pasos</h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>El módulo de trading se habilita en el paso 6</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>La wallet completa (depósitos/retiros) en el paso 3</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-primary">•</span>
-              <span>Las notificaciones realtime en el paso 8</span>
-            </li>
-          </ul>
+          <h2 className="font-semibold mb-3">Empezá a operar</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Mirá las monedas disponibles, analizá los gráficos y aprendé a leer
+            el mercado.
+          </p>
+          <div className="flex gap-2">
+            <a
+              href="/trading"
+              className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 text-center transition-opacity"
+            >
+              Ver monedas
+            </a>
+            <a
+              href="/wallet"
+              className="flex-1 px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-secondary text-center transition-colors"
+            >
+              Ver wallet
+            </a>
+          </div>
         </div>
       </div>
     </div>
