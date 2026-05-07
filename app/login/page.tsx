@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
+import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
@@ -18,15 +19,7 @@ export default function LoginPage() {
             Ingresá a tu cuenta para empezar a operar
           </p>
 
-          <div className="rounded-md bg-muted/50 border border-border/40 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">
-              ⚙️ Auth en construcción
-            </p>
-            <p>
-              El formulario funcional se implementa en el paso 2. Por ahora
-              estamos validando el setup base.
-            </p>
-          </div>
+          <LoginForm />
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             ¿No tenés cuenta?{" "}

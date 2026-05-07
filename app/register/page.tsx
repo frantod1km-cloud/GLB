@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { TrendingUp } from "lucide-react";
+import { RegisterForm } from "@/components/auth/register-form";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center gap-2 justify-center mb-8">
           <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
@@ -18,12 +20,9 @@ export default function RegisterPage() {
             Registrate para empezar a aprender
           </p>
 
-          <div className="rounded-md bg-muted/50 border border-border/40 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">
-              ⚙️ En construcción
-            </p>
-            <p>El formulario de registro se habilita en el paso 2.</p>
-          </div>
+          <Suspense fallback={<div className="h-72" />}>
+            <RegisterForm />
+          </Suspense>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             ¿Ya tenés cuenta?{" "}
