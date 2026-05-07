@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, LogOut, Shield, Wallet, LayoutDashboard, Activity } from "lucide-react";
+import { TrendingUp, LogOut, Shield, Wallet, LayoutDashboard, Activity, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/actions/auth";
 
@@ -35,6 +35,9 @@ export function DashboardNav({ profile }: DashboardNavProps) {
           </NavLink>
           <NavLink href="/trading" icon={<Activity className="w-4 h-4" />}>
             Trading
+          </NavLink>
+          <NavLink href="/trading/historial" icon={<History className="w-4 h-4" />}>
+            Historial
           </NavLink>
           <NavLink href="/wallet" icon={<Wallet className="w-4 h-4" />}>
             Wallet

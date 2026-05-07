@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Shield, ArrowLeft, Wallet, Users, Settings, Coins, TrendingUp, Bell } from "lucide-react";
+import { Shield, ArrowLeft, Wallet, Users, Settings, Coins, TrendingUp, Bell, Activity } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -51,6 +51,9 @@ export default async function AdminLayout({
             </AdminLink>
             <AdminLink href="/admin/coins" icon={<Coins className="w-4 h-4" />}>
               Monedas
+            </AdminLink>
+            <AdminLink href="/admin/trades" icon={<Activity className="w-4 h-4" />}>
+              Operaciones
             </AdminLink>
             <AdminLink href="/admin/users" icon={<Users className="w-4 h-4" />} disabled>
               Usuarios <small className="opacity-60">(próximo)</small>
