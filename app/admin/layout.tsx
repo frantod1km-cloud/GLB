@@ -49,11 +49,11 @@ export default async function AdminLayout({
             <AdminLink href="/admin/wallet" icon={<Wallet className="w-4 h-4" />}>
               Wallet ops
             </AdminLink>
+            <AdminLink href="/admin/coins" icon={<Coins className="w-4 h-4" />}>
+              Monedas
+            </AdminLink>
             <AdminLink href="/admin/users" icon={<Users className="w-4 h-4" />} disabled>
               Usuarios <small className="opacity-60">(próximo)</small>
-            </AdminLink>
-            <AdminLink href="/admin/coins" icon={<Coins className="w-4 h-4" />} disabled>
-              Monedas <small className="opacity-60">(próximo)</small>
             </AdminLink>
             <AdminLink href="/admin/motor" icon={<TrendingUp className="w-4 h-4" />} disabled>
               Motor <small className="opacity-60">(próximo)</small>
