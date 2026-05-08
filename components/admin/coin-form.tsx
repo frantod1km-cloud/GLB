@@ -203,7 +203,7 @@ export function CoinForm({ initial, onSuccess }: CoinFormProps) {
               Moneda activa
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
-              Solo las activas son visibles para los alumnos
+              Solo las activas son visibles para los usuarios
             </p>
           </div>
           <Switch id="is_active" checked={isActive} onCheckedChange={setIsActive} />

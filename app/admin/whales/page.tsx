@@ -1,10 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WhalesList } from "@/components/admin/whales-list";
 import { WhaleCommandCenter } from "@/components/admin/whale-command-center";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminWhalesPage() {
+  await requireSuperAdmin();
   const admin = createAdminClient();
 
   // Cargar todas las whales con su wallet y conteo de trades abiertos

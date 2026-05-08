@@ -82,7 +82,7 @@ export function CoinsList({ coins }: CoinsListProps) {
         </div>
         <h3 className="font-semibold mb-1">Aún no hay monedas</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Creá la primera moneda para que los alumnos puedan operar
+          Creá la primera moneda para que los usuarios puedan operar
         </p>
         <Button asChild>
           <Link href="/admin/coins/new">+ Crear primera moneda</Link>

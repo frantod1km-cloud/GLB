@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Coins, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CoinsList } from "@/components/admin/coins-list";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminCoinsPage() {
+  await requireSuperAdmin();
   const admin = createAdminClient();
   const { data: coins } = await admin
     .from("coins")
@@ -22,7 +24,7 @@ export default async function AdminCoinsPage() {
             Monedas
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Crear, editar y configurar las monedas que ven los alumnos
+            Crear, editar y configurar las monedas que ven los usuarios
           </p>
         </div>
         <Button asChild>

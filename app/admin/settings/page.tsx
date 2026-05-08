@@ -1,10 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { Settings } from "lucide-react";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
+  await requireSuperAdmin();
   const admin = createAdminClient();
   const { data: settings } = await admin
     .from("motor_settings")

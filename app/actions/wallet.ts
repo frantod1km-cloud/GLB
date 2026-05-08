@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 export type WalletResult = { error?: string; success?: boolean };
 
 /**
- * Solicitar depósito (alumno)
+ * Solicitar depósito (usuario)
  */
 export async function requestDepositAction(formData: FormData): Promise<WalletResult> {
   const supabase = createClient();
@@ -40,7 +40,7 @@ export async function requestDepositAction(formData: FormData): Promise<WalletRe
 }
 
 /**
- * Solicitar retiro (alumno)
+ * Solicitar retiro (usuario)
  */
 export async function requestWithdrawalAction(formData: FormData): Promise<WalletResult> {
   const supabase = createClient();

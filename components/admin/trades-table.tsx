@@ -162,7 +162,7 @@ export function AdminTradesTable({ trades }: AdminTradesTableProps) {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Vas a cerrar manualmente esta operación al precio actual del mercado.
-            El alumno recibe el PnL correspondiente.
+            El usuario recibe el PnL correspondiente.
           </p>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>

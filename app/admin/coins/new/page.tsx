@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CoinForm } from "@/components/admin/coin-form";
+import { requireSuperAdmin } from "@/lib/auth";
 
-export default function NewCoinPage() {
+export default async function NewCoinPage() {
+  await requireSuperAdmin();
   return (
     <div className="max-w-3xl space-y-6">
       <div>

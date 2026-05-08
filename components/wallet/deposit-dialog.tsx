@@ -110,7 +110,7 @@ export function DepositDialog({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  ⚠️ Esta es una plataforma educativa. La dirección es ficticia.
+                  Tu depósito será procesado por nuestro equipo dentro de las próximas 24hs.
                   Una vez "enviado", solicitá el depósito abajo.
                 </p>
               </div>

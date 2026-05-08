@@ -73,7 +73,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
             { value: "proof", label: "Comprobante (URL de imagen)" },
             { value: "wallet", label: "Dirección de billetera (más realista)" },
           ]}
-          hint="Cómo ven los alumnos el formulario de depósito."
+          hint="Cómo ven los usuarios el formulario de depósito."
         />
 
         <Field

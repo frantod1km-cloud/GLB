@@ -72,7 +72,7 @@ export function CoinPreview({ coin }: { coin: any }) {
       />
 
       <p className="text-xs text-muted-foreground">
-        💡 El motor corre en el servidor 24/7 (1 tick/segundo). Todos los alumnos
+        💡 El motor corre en el servidor 24/7 (1 tick/segundo). Todos los usuarios
         ven exactamente lo mismo. Cambia los parámetros abajo y guarda para ver el efecto.
       </p>
     </div>

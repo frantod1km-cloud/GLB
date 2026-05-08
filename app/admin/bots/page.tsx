@@ -1,9 +1,11 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BotsList } from "@/components/admin/bots-list";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBotsPage() {
+  await requireSuperAdmin();
   const admin = createAdminClient();
 
   // Cargar profiles + bots config + wallets

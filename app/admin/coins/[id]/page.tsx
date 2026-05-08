@@ -4,10 +4,12 @@ import { ArrowLeft, Activity } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CoinForm } from "@/components/admin/coin-form";
 import { CoinPreview } from "@/components/admin/coin-preview";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditCoinPage({ params }: { params: { id: string } }) {
+  await requireSuperAdmin();
   const admin = createAdminClient();
   const { data: coin } = await admin
     .from("coins")

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { WhaleTrades } from "@/components/admin/whale-trades";
 import { Badge } from "@/components/ui/badge";
 import { formatUSDT } from "@/lib/utils";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export default async function WhaleDetailPage({
 }: {
   params: { id: string };
 }) {
+  await requireSuperAdmin();
   const admin = createAdminClient();
 
   // Verificar que es whale

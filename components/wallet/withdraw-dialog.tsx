@@ -103,7 +103,7 @@ export function WithdrawDialog({
                 disabled={isPending}
               />
               <p className="text-xs text-muted-foreground">
-                Es educativo: la dirección no se usa realmente, pero igual la pedimos
+                Asegurate de que la dirección sea correcta. Los retiros son irreversibles una vez procesados.
                 para simular el flujo real.
               </p>
             </div>

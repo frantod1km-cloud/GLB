@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { BotTrades } from "@/components/admin/bot-trades";
 import { Badge } from "@/components/ui/badge";
 import { formatUSDT } from "@/lib/utils";
+import { requireSuperAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function BotDetailPage({
 }: {
   params: { id: string };
 }) {
+  await requireSuperAdmin();
   const admin = createAdminClient();
 
   const { data: bot } = await admin

@@ -47,7 +47,7 @@ export default async function TradingPage() {
           </div>
           <h3 className="font-semibold mb-1">No hay monedas disponibles</h3>
           <p className="text-sm text-muted-foreground">
-            Tu instructor aún no creó ninguna moneda activa para operar.
+            El equipo aún no creó ninguna moneda activa para operar.
           </p>
         </div>
       ) : (

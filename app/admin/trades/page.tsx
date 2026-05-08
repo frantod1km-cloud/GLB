@@ -43,7 +43,7 @@ export default async function AdminTradesPage({
           Operaciones
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Trades de todos los alumnos
+          Trades de todos los usuarios
         </p>
       </div>
 

@@ -279,7 +279,7 @@ export async function whalePrecisionAction(
 }
 
 /**
- * Borrar un trade del historial de una whale (no afecta wallet del alumno)
+ * Borrar un trade del historial de una whale (no afecta wallet del usuario)
  */
 export async function deleteWhaleTradeAction(tradeId: string): Promise<WhaleResult> {
   const supabase = createClient();
