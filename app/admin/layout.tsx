@@ -52,6 +52,9 @@ export default async function AdminLayout({
             <AdminLink href="/admin/coins" icon={<Coins className="w-4 h-4" />}>
               Monedas
             </AdminLink>
+            <AdminLink href="/admin/whales" icon={<span className="w-4 h-4 inline-flex items-center justify-center text-base">🐋</span>}>
+              Whales
+            </AdminLink>
             <AdminLink href="/admin/trades" icon={<Activity className="w-4 h-4" />}>
               Operaciones
             </AdminLink>

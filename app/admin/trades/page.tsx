@@ -17,9 +17,10 @@ export default async function AdminTradesPage({
     .from("trades")
     .select(`
       *,
-      profiles!trades_user_id_fkey ( email, full_name ),
+      profiles!trades_user_id_fkey!inner ( email, full_name, role ),
       coins ( symbol, decimals )
     `)
+    .eq("profiles.role", "student")
     .order(filter === "closed" ? "closed_at" : "opened_at", { ascending: false })
     .limit(100);
 
