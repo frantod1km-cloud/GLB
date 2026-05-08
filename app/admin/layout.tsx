@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Shield, ArrowLeft, Wallet, Users, Settings, Coins, TrendingUp, Bell, Activity } from "lucide-react";
+import { NotificationsBell } from "@/components/notifications/notifications-bell";
 
 export default async function AdminLayout({
   children,
@@ -30,13 +31,16 @@ export default async function AdminLayout({
             <Shield className="w-5 h-5 text-primary" />
             <span className="font-bold text-lg">Panel admin</span>
           </div>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver al dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <NotificationsBell userId={user.id} />
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Volver al dashboard
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -67,8 +71,8 @@ export default async function AdminLayout({
             <AdminLink href="/admin/motor" icon={<TrendingUp className="w-4 h-4" />} disabled>
               Motor <small className="opacity-60">(próximo)</small>
             </AdminLink>
-            <AdminLink href="/admin/notifications" icon={<Bell className="w-4 h-4" />} disabled>
-              Notificaciones <small className="opacity-60">(próximo)</small>
+            <AdminLink href="/notifications" icon={<Bell className="w-4 h-4" />}>
+              Notificaciones
             </AdminLink>
             <AdminLink href="/admin/settings" icon={<Settings className="w-4 h-4" />}>
               Configuración

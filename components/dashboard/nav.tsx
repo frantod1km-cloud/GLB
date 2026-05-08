@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TrendingUp, LogOut, Shield, Wallet, LayoutDashboard, Activity, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/actions/auth";
+import { NotificationsBell } from "@/components/notifications/notifications-bell";
 
 interface DashboardNavProps {
   profile: {
@@ -54,6 +55,8 @@ export function DashboardNav({ profile }: DashboardNavProps) {
               <span className="hidden sm:inline">Panel admin</span>
             </Link>
           )}
+
+          <NotificationsBell userId={profile.id} />
 
           <div className="text-sm text-right hidden md:block">
             <div className="font-medium leading-tight">{displayName}</div>
