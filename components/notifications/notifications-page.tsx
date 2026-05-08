@@ -1,17 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, Check, CheckCheck, Trash2, Filter } from "lucide-react";
+import { ArrowLeft, Bell, Check, CheckCheck, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  markNotificationReadAction,
-  markAllReadAction,
-  deleteNotificationAction,
-  clearReadAction,
-} from "@/app/actions/notifications";
 
 interface Notification {
   id: string;
@@ -28,7 +22,6 @@ export default function NotificationsClientPage({ userId }: { userId: string }) 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<FilterMode>("all");
   const [loading, setLoading] = useState(true);
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const supabase = createClient();
@@ -86,29 +79,57 @@ export default function NotificationsClientPage({ userId }: { userId: string }) 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
   const readCount = notifications.filter((n) => !!n.read_at).length;
 
-  function handleMarkRead(id: string) {
-    startTransition(async () => {
-      await markNotificationReadAction(id);
-    });
+  async function handleMarkRead(id: string) {
+    const supabase = createClient();
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === id ? { ...n, read_at: new Date().toISOString() } : n
+      )
+    );
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", id);
   }
 
-  function handleMarkAllRead() {
-    startTransition(async () => {
-      await markAllReadAction();
-    });
+  async function handleMarkAllRead() {
+    const supabase = createClient();
+    const now = new Date().toISOString();
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, read_at: n.read_at || now }))
+    );
+    await supabase
+      .from("notifications")
+      .update({ read_at: now })
+      .eq("user_id", userId)
+      .is("read_at", null);
   }
 
-  function handleDelete(id: string) {
-    startTransition(async () => {
-      await deleteNotificationAction(id);
-    });
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const { error } = await supabase.from("notifications").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting:", error);
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      setNotifications(data || []);
+    }
   }
 
-  function handleClearRead() {
+  async function handleClearRead() {
     if (!confirm(`¿Eliminar las ${readCount} notificaciones leídas?`)) return;
-    startTransition(async () => {
-      await clearReadAction();
-    });
+    const supabase = createClient();
+    setNotifications((prev) => prev.filter((n) => !n.read_at));
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", userId)
+      .not("read_at", "is", null);
   }
 
   return (
@@ -127,7 +148,6 @@ export default function NotificationsClientPage({ userId }: { userId: string }) 
         </h1>
       </div>
 
-      {/* Filtros y acciones */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-1">
           {(["all", "unread", "read"] as FilterMode[]).map((f) => (
@@ -149,23 +169,13 @@ export default function NotificationsClientPage({ userId }: { userId: string }) 
 
         <div className="flex gap-2">
           {unreadCount > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleMarkAllRead}
-              disabled={isPending}
-            >
+            <Button size="sm" variant="outline" onClick={handleMarkAllRead}>
               <CheckCheck className="w-4 h-4" />
               Marcar todas como leídas
             </Button>
           )}
           {readCount > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleClearRead}
-              disabled={isPending}
-            >
+            <Button size="sm" variant="outline" onClick={handleClearRead}>
               <Trash2 className="w-4 h-4" />
               Borrar leídas
             </Button>
@@ -173,11 +183,8 @@ export default function NotificationsClientPage({ userId }: { userId: string }) 
         </div>
       </div>
 
-      {/* Lista */}
       {loading ? (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          Cargando...
-        </div>
+        <div className="text-center py-12 text-sm text-muted-foreground">Cargando...</div>
       ) : filtered.length === 0 ? (
         <div className="bg-card border border-border/60 rounded-lg p-12 text-center">
           <Bell className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -196,7 +203,6 @@ export default function NotificationsClientPage({ userId }: { userId: string }) 
                 notification={n}
                 onMarkRead={handleMarkRead}
                 onDelete={handleDelete}
-                disabled={isPending}
               />
             ))}
           </div>
@@ -210,12 +216,10 @@ function NotificationRow({
   notification,
   onMarkRead,
   onDelete,
-  disabled,
 }: {
   notification: Notification;
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
-  disabled: boolean;
 }) {
   const isUnread = !notification.read_at;
   const typeColor =
@@ -250,9 +254,7 @@ function NotificationRow({
             })}
           </span>
         </div>
-        <div className="text-sm text-muted-foreground mt-1">
-          {notification.message}
-        </div>
+        <div className="text-sm text-muted-foreground mt-1">{notification.message}</div>
       </div>
 
       <div className="flex items-center gap-1 flex-shrink-0">
@@ -261,7 +263,6 @@ function NotificationRow({
             size="icon"
             variant="ghost"
             onClick={() => onMarkRead(notification.id)}
-            disabled={disabled}
             title="Marcar como leída"
           >
             <Check className="w-4 h-4" />
@@ -271,7 +272,6 @@ function NotificationRow({
           size="icon"
           variant="ghost"
           onClick={() => onDelete(notification.id)}
-          disabled={disabled}
           title="Eliminar"
           className="text-destructive hover:text-destructive"
         >

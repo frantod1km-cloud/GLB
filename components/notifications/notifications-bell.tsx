@@ -2,15 +2,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, Trash2, X } from "lucide-react";
+import { Bell, Check, CheckCheck, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import {
-  markNotificationReadAction,
-  markAllReadAction,
-  deleteNotificationAction,
-} from "@/app/actions/notifications";
 
 interface NotificationsBellProps {
   userId: string;
@@ -32,7 +26,6 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-  // Cargar últimas 20 + suscribirse a realtime
   useEffect(() => {
     const supabase = createClient();
 
@@ -76,23 +69,46 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
     };
   }, [userId]);
 
-  function handleMarkRead(id: string) {
-    startTransition(async () => {
-      await markNotificationReadAction(id);
-      // El realtime UPDATE se encarga de actualizar el state
-    });
+  // Llamar Supabase directamente desde el cliente: la sesión funciona perfecto
+  async function handleMarkRead(id: string) {
+    const supabase = createClient();
+    // Update optimista
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
+    );
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", id);
   }
 
-  function handleMarkAllRead() {
-    startTransition(async () => {
-      await markAllReadAction();
-    });
+  async function handleMarkAllRead() {
+    const supabase = createClient();
+    const now = new Date().toISOString();
+    setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || now })));
+    await supabase
+      .from("notifications")
+      .update({ read_at: now })
+      .eq("user_id", userId)
+      .is("read_at", null);
   }
 
-  function handleDelete(id: string) {
-    startTransition(async () => {
-      await deleteNotificationAction(id);
-    });
+  async function handleDelete(id: string) {
+    const supabase = createClient();
+    // Update optimista
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const { error } = await supabase.from("notifications").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting notification:", error);
+      // si falla, recargar
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setNotifications(data || []);
+    }
   }
 
   return (
@@ -124,7 +140,6 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              disabled={isPending}
               className="text-xs text-primary hover:underline flex items-center gap-1"
               title="Marcar todas como leídas"
             >
@@ -148,7 +163,6 @@ export function NotificationsBell({ userId }: NotificationsBellProps) {
                   notification={n}
                   onMarkRead={handleMarkRead}
                   onDelete={handleDelete}
-                  disabled={isPending}
                 />
               ))}
             </div>
@@ -173,12 +187,10 @@ function NotificationItem({
   notification,
   onMarkRead,
   onDelete,
-  disabled,
 }: {
   notification: Notification;
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
-  disabled: boolean;
 }) {
   const isUnread = !notification.read_at;
   const typeColor =
@@ -217,7 +229,6 @@ function NotificationItem({
         {isUnread && (
           <button
             onClick={() => onMarkRead(notification.id)}
-            disabled={disabled}
             className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
           >
             <Check className="w-2.5 h-2.5" />
@@ -226,7 +237,6 @@ function NotificationItem({
         )}
         <button
           onClick={() => onDelete(notification.id)}
-          disabled={disabled}
           className="text-[10px] text-destructive hover:underline flex items-center gap-0.5 ml-auto"
         >
           <X className="w-2.5 h-2.5" />
