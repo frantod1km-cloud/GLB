@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Trash2, Pencil, Loader2, Plus, AlertCircle } from "lucide-react";
+import { Trash2, Pencil, Loader2, Plus, AlertCircle, ExternalLink } from "lucide-react";
 import {
   setWhaleBalanceAction,
   toggleWhaleAction,
@@ -171,6 +172,11 @@ export function WhalesList({ whales }: WhalesListProps) {
                     onCheckedChange={(v) => handleToggle(whale.id, v)}
                     disabled={isPending}
                   />
+                  <Button asChild variant="ghost" size="icon" title="Ver detalle">
+                    <Link href={`/admin/whales/${whale.id}`}>
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

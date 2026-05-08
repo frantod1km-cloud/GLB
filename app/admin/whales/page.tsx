@@ -17,7 +17,6 @@ export default async function AdminWhalesPage() {
     .eq("role", "whale")
     .order("created_at", { ascending: false });
 
-  // Aplanar el resultado y contar trades abiertos
   const whales = await Promise.all(
     (whalesRaw || []).map(async (w: any) => {
       const wallet = Array.isArray(w.wallets) ? w.wallets[0] : w.wallets;
@@ -43,6 +42,30 @@ export default async function AdminWhalesPage() {
     .eq("is_active", true)
     .order("symbol");
 
+  // Cargar batches pendientes (acciones programadas SOFT)
+  const { data: scheduledRaw } = await admin
+    .from("whale_scheduled_actions")
+    .select("batch_id, execute_at, status")
+    .eq("status", "pending")
+    .order("execute_at", { ascending: true });
+
+  // Agrupar por batch_id
+  const batchMap = new Map<string, { batch_id: string; pending: number; next_at: string }>();
+  for (const s of scheduledRaw || []) {
+    if (!s.batch_id) continue;
+    const existing = batchMap.get(s.batch_id);
+    if (existing) {
+      existing.pending++;
+    } else {
+      batchMap.set(s.batch_id, {
+        batch_id: s.batch_id,
+        pending: 1,
+        next_at: s.execute_at,
+      });
+    }
+  }
+  const pendingBatches = Array.from(batchMap.values());
+
   // Stats agregadas
   const totalWhales = whales.filter((w: any) => w.is_active).length;
   const totalAvailable = whales
@@ -64,14 +87,14 @@ export default async function AdminWhalesPage() {
         </p>
       </div>
 
-      {/* Centro de comando arriba */}
       <WhaleCommandCenter
         coins={coins || []}
+        whales={whales}
         totalWhales={totalWhales}
         totalAvailable={totalAvailable}
+        pendingBatches={pendingBatches}
       />
 
-      {/* Lista de whales abajo */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Whales registradas</h2>
         <WhalesList whales={whales} />

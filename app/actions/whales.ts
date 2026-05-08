@@ -209,3 +209,87 @@ export async function updateMarketLiquidityAction(
   revalidatePath("/admin/coins");
   return { success: true };
 }
+
+/**
+ * SOFT command - reparte la presión en N segundos
+ */
+export async function whaleSoftCommandAction(
+  coinId: string,
+  command: "soft_pump" | "soft_dump",
+  totalAmount: number,
+  leverage: number,
+  durationSeconds: number
+): Promise<WhaleResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("admin_whale_soft_command", {
+    p_coin_id: coinId,
+    p_command: command,
+    p_total_amount: totalAmount,
+    p_leverage: leverage,
+    p_duration_seconds: durationSeconds,
+  });
+
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+
+  revalidatePath("/admin/whales");
+  return { success: true, data };
+}
+
+/**
+ * Cancelar un batch de SOFT pendientes
+ */
+export async function cancelWhaleBatchAction(batchId: string): Promise<WhaleResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("admin_cancel_whale_batch", {
+    p_batch_id: batchId,
+  });
+
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+
+  revalidatePath("/admin/whales");
+  return { success: true, data };
+}
+
+/**
+ * PRECISION - una whale específica + monto + dirección
+ */
+export async function whalePrecisionAction(
+  whaleId: string,
+  coinId: string,
+  direction: "long" | "short",
+  amount: number,
+  leverage: number
+): Promise<WhaleResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("admin_whale_precision", {
+    p_whale_id: whaleId,
+    p_coin_id: coinId,
+    p_direction: direction,
+    p_amount: amount,
+    p_leverage: leverage,
+  });
+
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+
+  revalidatePath("/admin/whales");
+  return { success: true, data };
+}
+
+/**
+ * Borrar un trade del historial de una whale (no afecta wallet del alumno)
+ */
+export async function deleteWhaleTradeAction(tradeId: string): Promise<WhaleResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("admin_delete_whale_trade", {
+    p_trade_id: tradeId,
+  });
+
+  if (error) return { error: error.message };
+  if (data?.error) return { error: data.error };
+
+  revalidatePath("/admin/whales");
+  return { success: true };
+}

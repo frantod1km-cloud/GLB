@@ -6,30 +6,69 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Zap, TrendingUp, TrendingDown, X, Loader2, AlertCircle } from "lucide-react";
-import { whaleCommandAction, updateMarketLiquidityAction } from "@/app/actions/whales";
+import {
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  X,
+  Loader2,
+  AlertCircle,
+  Waves,
+  Crosshair,
+} from "lucide-react";
+import {
+  whaleCommandAction,
+  whaleSoftCommandAction,
+  whalePrecisionAction,
+  cancelWhaleBatchAction,
+  updateMarketLiquidityAction,
+} from "@/app/actions/whales";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice, formatUSDT } from "@/lib/utils";
 
 interface CommandCenterProps {
   coins: any[];
+  whales: any[];
   totalWhales: number;
   totalAvailable: number;
+  pendingBatches: any[];
 }
 
-export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvailable }: CommandCenterProps) {
+type Mode = "instant" | "soft" | "precision";
+
+export function WhaleCommandCenter({
+  coins: initialCoins,
+  whales,
+  totalWhales,
+  totalAvailable,
+  pendingBatches,
+}: CommandCenterProps) {
   const router = useRouter();
   const [coins, setCoins] = useState(initialCoins);
+  const [mode, setMode] = useState<Mode>("instant");
   const [selectedCoinId, setSelectedCoinId] = useState<string>(initialCoins[0]?.id || "");
+
+  // Instant
   const [amount, setAmount] = useState<string>("10000");
   const [leverage, setLeverage] = useState<number>(5);
+
+  // Soft
+  const [softAmount, setSoftAmount] = useState<string>("30000");
+  const [softLeverage, setSoftLeverage] = useState<number>(5);
+  const [softDuration, setSoftDuration] = useState<number>(60);
+
+  // Precision
+  const [precWhaleId, setPrecWhaleId] = useState<string>(whales[0]?.id || "");
+  const [precDirection, setPrecDirection] = useState<"long" | "short">("long");
+  const [precAmount, setPrecAmount] = useState<string>("5000");
+  const [precLeverage, setPrecLeverage] = useState<number>(5);
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [editLiquidity, setEditLiquidity] = useState(false);
   const [liquidityValue, setLiquidityValue] = useState("");
 
-  // Suscribirse a cambios de precio en vivo
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -54,22 +93,25 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
   }, []);
 
   const selectedCoin = coins.find((c) => c.id === selectedCoinId);
+  const selectedWhale = whales.find((w) => w.id === precWhaleId);
 
-  function handleCommand(command: "pump" | "dump" | "stop") {
+  function flashSuccess(msg: string) {
+    setSuccess(msg);
+    setTimeout(() => setSuccess(null), 4000);
+  }
+
+  function handleInstant(command: "pump" | "dump" | "stop") {
     setError(null);
     setSuccess(null);
     if (!selectedCoinId) {
       setError("Elegí una moneda");
       return;
     }
-
     const totalAmount = command === "stop" ? 0 : Number(amount);
-
     if (command !== "stop" && (!totalAmount || totalAmount <= 0)) {
       setError("Monto inválido");
       return;
     }
-
     startTransition(async () => {
       const r = await whaleCommandAction(selectedCoinId, command, totalAmount, leverage);
       if (r.error) {
@@ -77,15 +119,89 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
         return;
       }
       const d = r.data;
-      if (command === "stop") {
-        setSuccess(`✓ ${d.closed} operaciones cerradas`);
-      } else {
-        setSuccess(
-          `✓ ${command === "pump" ? "PUMP" : "DUMP"}: ${d.whales_executed} whales abrieron ${formatUSDT(d.amount_per_whale)} USDT cada una`
+      if (command === "stop") flashSuccess(`✓ ${d.closed} operaciones cerradas`);
+      else
+        flashSuccess(
+          `✓ ${command.toUpperCase()}: ${d.whales_executed} whales × ${formatUSDT(d.amount_per_whale)} USDT`
         );
-      }
-      setTimeout(() => setSuccess(null), 4000);
       router.refresh();
+    });
+  }
+
+  function handleSoft(command: "soft_pump" | "soft_dump") {
+    setError(null);
+    setSuccess(null);
+    if (!selectedCoinId) {
+      setError("Elegí una moneda");
+      return;
+    }
+    const total = Number(softAmount);
+    if (!total || total <= 0) {
+      setError("Monto inválido");
+      return;
+    }
+    if (softDuration < 5 || softDuration > 600) {
+      setError("Duración entre 5 y 600 segundos");
+      return;
+    }
+    startTransition(async () => {
+      const r = await whaleSoftCommandAction(
+        selectedCoinId,
+        command,
+        total,
+        softLeverage,
+        softDuration
+      );
+      if (r.error) {
+        setError(r.error);
+        return;
+      }
+      const d = r.data;
+      flashSuccess(
+        `✓ Soft ${command === "soft_pump" ? "PUMP" : "DUMP"}: ${d.steps} pasos en ${d.duration_seconds}s programados`
+      );
+      router.refresh();
+    });
+  }
+
+  function handlePrecision() {
+    setError(null);
+    setSuccess(null);
+    if (!precWhaleId || !selectedCoinId) {
+      setError("Faltan datos");
+      return;
+    }
+    const am = Number(precAmount);
+    if (!am || am <= 0) {
+      setError("Monto inválido");
+      return;
+    }
+    startTransition(async () => {
+      const r = await whalePrecisionAction(
+        precWhaleId,
+        selectedCoinId,
+        precDirection,
+        am,
+        precLeverage
+      );
+      if (r.error) {
+        setError(r.error);
+        return;
+      }
+      flashSuccess(
+        `✓ Precision: ${selectedWhale?.full_name} abrió ${precDirection.toUpperCase()} ${formatUSDT(am)} USDT @ ${precLeverage}x`
+      );
+      router.refresh();
+    });
+  }
+
+  function handleCancelBatch(batchId: string) {
+    startTransition(async () => {
+      const r = await cancelWhaleBatchAction(batchId);
+      if (!r.error) {
+        flashSuccess("✓ Batch cancelado");
+        router.refresh();
+      }
     });
   }
 
@@ -121,7 +237,7 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
         <div className="text-4xl mb-2">🐋</div>
         <h3 className="font-semibold mb-1">Necesitás whales primero</h3>
         <p className="text-sm text-muted-foreground">
-          Creá al menos una whale activa abajo para usar los comandos masivos.
+          Creá al menos una whale activa abajo para usar los comandos.
         </p>
       </div>
     );
@@ -139,7 +255,7 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
         </Badge>
       </div>
 
-      {/* Selector de moneda */}
+      {/* Selector de moneda compartido */}
       <div className="space-y-1.5">
         <Label className="text-xs">Moneda objetivo</Label>
         <select
@@ -158,12 +274,6 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
 
       {selectedCoin && (
         <div className="bg-muted/20 rounded-md p-3 text-xs space-y-1">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Precio actual</span>
-            <span className="font-mono font-semibold">
-              {formatPrice(Number(selectedCoin.current_price), selectedCoin.decimals)}
-            </span>
-          </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Liquidez de mercado</span>
             {editLiquidity ? (
@@ -201,87 +311,280 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
               </button>
             )}
           </div>
-          <p className="text-muted-foreground italic text-[10px]">
-            Liquidez baja → más fácil mover el precio. Click para editar.
-          </p>
         </div>
       )}
 
-      {/* Inputs de comando */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Total a usar (USDT)</Label>
-          <Input
-            type="number"
-            step="any"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            disabled={isPending}
-            className="font-mono"
-          />
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border/40">
+        <ModeTab
+          icon={<Zap className="w-3.5 h-3.5" />}
+          label="Masivo"
+          active={mode === "instant"}
+          onClick={() => setMode("instant")}
+        />
+        <ModeTab
+          icon={<Waves className="w-3.5 h-3.5" />}
+          label="Soft (gradual)"
+          active={mode === "soft"}
+          onClick={() => setMode("soft")}
+        />
+        <ModeTab
+          icon={<Crosshair className="w-3.5 h-3.5" />}
+          label="Precision"
+          active={mode === "precision"}
+          onClick={() => setMode("precision")}
+        />
+      </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs">Apalancamiento</Label>
-          <select
-            value={leverage}
-            onChange={(e) => setLeverage(Number(e.target.value))}
+      {/* INSTANT */}
+      {mode === "instant" && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Total USDT</Label>
+              <Input
+                type="number"
+                step="any"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                disabled={isPending}
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Apalancamiento</Label>
+              <select
+                value={leverage}
+                onChange={(e) => setLeverage(Number(e.target.value))}
+                disabled={isPending}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+              >
+                {[1, 2, 5, 10, 25].map((l) => (
+                  <option key={l} value={l}>
+                    {l}x
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Inmediato: todas las whales abren posición de golpe
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              onClick={() => handleInstant("pump")}
+              disabled={isPending}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+              PUMP
+            </Button>
+            <Button
+              onClick={() => handleInstant("dump")}
+              disabled={isPending}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingDown className="w-4 h-4" />}
+              DUMP
+            </Button>
+            <Button onClick={() => handleInstant("stop")} disabled={isPending} variant="outline">
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+              STOP
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* SOFT */}
+      {mode === "soft" && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Total USDT</Label>
+              <Input
+                type="number"
+                step="any"
+                value={softAmount}
+                onChange={(e) => setSoftAmount(e.target.value)}
+                disabled={isPending}
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Leverage</Label>
+              <select
+                value={softLeverage}
+                onChange={(e) => setSoftLeverage(Number(e.target.value))}
+                disabled={isPending}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+              >
+                {[1, 2, 5, 10, 25].map((l) => (
+                  <option key={l} value={l}>
+                    {l}x
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Duración (seg)</Label>
+              <Input
+                type="number"
+                min="5"
+                max="600"
+                value={softDuration}
+                onChange={(e) => setSoftDuration(Number(e.target.value))}
+                disabled={isPending}
+                className="font-mono"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            La presión se distribuye en N segundos. Más sutil, parece movimiento orgánico.
+          </p>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => handleSoft("soft_pump")}
+              disabled={isPending}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Waves className="w-4 h-4" />}
+              SOFT PUMP
+            </Button>
+            <Button
+              onClick={() => handleSoft("soft_dump")}
+              disabled={isPending}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Waves className="w-4 h-4" />}
+              SOFT DUMP
+            </Button>
+          </div>
+
+          {pendingBatches.length > 0 && (
+            <div className="border border-yellow-500/30 bg-yellow-500/5 rounded-md p-3 space-y-2">
+              <p className="text-xs font-semibold text-yellow-500">
+                ⏱️ Batches activos
+              </p>
+              {pendingBatches.map((b: any) => (
+                <div
+                  key={b.batch_id}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span className="font-mono">
+                    {b.pending} acciones pendientes — próx: {new Date(b.next_at).toLocaleTimeString("es-AR")}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleCancelBatch(b.batch_id)}
+                    disabled={isPending}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PRECISION */}
+      {mode === "precision" && (
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Whale específica</Label>
+            <select
+              value={precWhaleId}
+              onChange={(e) => setPrecWhaleId(e.target.value)}
+              disabled={isPending}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {whales.map((w: any) => (
+                <option key={w.id} value={w.id} disabled={!w.is_active}>
+                  {w.full_name} — {formatUSDT(Number(w.balance) - Number(w.locked_balance || 0))} USDT
+                  {!w.is_active && " (inactiva)"}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPrecDirection("long")}
+              disabled={isPending}
+              className={`py-2 rounded-md font-semibold text-sm flex items-center justify-center gap-1.5 transition-all ${
+                precDirection === "long"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              Long
+            </button>
+            <button
+              type="button"
+              onClick={() => setPrecDirection("short")}
+              disabled={isPending}
+              className={`py-2 rounded-md font-semibold text-sm flex items-center justify-center gap-1.5 transition-all ${
+                precDirection === "short"
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <TrendingDown className="w-4 h-4" />
+              Short
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Monto USDT</Label>
+              <Input
+                type="number"
+                step="any"
+                value={precAmount}
+                onChange={(e) => setPrecAmount(e.target.value)}
+                disabled={isPending}
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Leverage</Label>
+              <select
+                value={precLeverage}
+                onChange={(e) => setPrecLeverage(Number(e.target.value))}
+                disabled={isPending}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+              >
+                {[1, 2, 5, 10, 25].map((l) => (
+                  <option key={l} value={l}>
+                    {l}x
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Cirugía fina: una sola whale + monto exacto. Útil para escenarios puntuales.
+          </p>
+
+          <Button
+            onClick={handlePrecision}
             disabled={isPending}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+            className="w-full"
+            variant="outline"
           >
-            {[1, 2, 5, 10, 25].map((l) => (
-              <option key={l} value={l}>
-                {l}x
-              </option>
-            ))}
-          </select>
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crosshair className="w-4 h-4" />}
+            Ejecutar precisión
+          </Button>
         </div>
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Se distribuye entre todas las whales activas con saldo. Cada whale abre un trade con
-        ese monto y leverage en la dirección elegida.
-      </p>
-
-      {/* Botones de acción */}
-      <div className="grid grid-cols-3 gap-2">
-        <Button
-          onClick={() => handleCommand("pump")}
-          disabled={isPending}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <TrendingUp className="w-4 h-4" />
-          )}
-          PUMP
-        </Button>
-        <Button
-          onClick={() => handleCommand("dump")}
-          disabled={isPending}
-          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-        >
-          {isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <TrendingDown className="w-4 h-4" />
-          )}
-          DUMP
-        </Button>
-        <Button
-          onClick={() => handleCommand("stop")}
-          disabled={isPending}
-          variant="outline"
-        >
-          {isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <X className="w-4 h-4" />
-          )}
-          STOP
-        </Button>
-      </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-xs">
@@ -296,5 +599,32 @@ export function WhaleCommandCenter({ coins: initialCoins, totalWhales, totalAvai
         </div>
       )}
     </div>
+  );
+}
+
+function ModeTab({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-2 text-xs font-medium flex items-center gap-1.5 transition-colors border-b-2 -mb-px ${
+        active
+          ? "text-primary border-primary"
+          : "text-muted-foreground border-transparent hover:text-foreground"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
