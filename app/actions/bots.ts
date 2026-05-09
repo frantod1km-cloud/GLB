@@ -18,7 +18,7 @@ async function ensureAdmin() {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") return { error: "Solo admins", user: null };
+  if (profile?.role !== "admin" && profile?.role !== "super_admin") return { error: "Solo admins", user: null };
 
   return { error: null, user };
 }

@@ -149,7 +149,7 @@ export async function updateWalletSettingsAction(formData: FormData): Promise<Wa
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") return { error: "Solo admins" };
+  if (profile?.role !== "admin" && profile?.role !== "super_admin") return { error: "Solo admins" };
 
   const updates: Record<string, any> = {};
   const fields = [

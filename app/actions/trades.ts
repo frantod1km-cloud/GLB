@@ -72,7 +72,7 @@ export async function adminCloseTradeAction(tradeId: string): Promise<TradeResul
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") return { error: "Solo admins" };
+  if (profile?.role !== "admin" && profile?.role !== "super_admin") return { error: "Solo admins" };
 
   const { data, error } = await supabase.rpc("close_trade", {
     p_trade_id: tradeId,
