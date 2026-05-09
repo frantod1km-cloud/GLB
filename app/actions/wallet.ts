@@ -69,16 +69,16 @@ export async function requestWithdrawalAction(formData: FormData): Promise<Walle
 }
 
 /**
- * Aprobar transacción (admin)
+ * Aprobar transacción (admin) - descuenta de su saldo si es admin normal
  */
 export async function approveTransactionAction(
   transactionId: string,
   notes?: string
 ): Promise<WalletResult> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("admin_approve_transaction", {
+  const { data, error } = await supabase.rpc("approve_transaction", {
     p_transaction_id: transactionId,
-    p_notes: notes || null,
+    p_action: "approve",
   });
 
   if (error) return { error: error.message };
@@ -97,9 +97,9 @@ export async function rejectTransactionAction(
   notes?: string
 ): Promise<WalletResult> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("admin_reject_transaction", {
+  const { data, error } = await supabase.rpc("approve_transaction", {
     p_transaction_id: transactionId,
-    p_notes: notes || null,
+    p_action: "reject",
   });
 
   if (error) return { error: error.message };
