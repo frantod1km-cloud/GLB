@@ -18,6 +18,7 @@ export function CoinForm({ initial, onSuccess }: CoinFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isActive, setIsActive] = useState<boolean>(initial?.is_active ?? true);
+  const [spotEnabled, setSpotEnabled] = useState<boolean>(initial?.spot_enabled ?? true);
   const [isPending, startTransition] = useTransition();
 
   const isEdit = !!initial;
@@ -25,6 +26,7 @@ export function CoinForm({ initial, onSuccess }: CoinFormProps) {
   function handleSubmit(formData: FormData) {
     setError(null);
     formData.set("is_active", isActive ? "on" : "off");
+    formData.set("spot_enabled", spotEnabled ? "on" : "off");
 
     startTransition(async () => {
       const result = isEdit
@@ -191,6 +193,68 @@ export function CoinForm({ initial, onSuccess }: CoinFormProps) {
             />
             <p className="text-xs text-muted-foreground">
               Diferencia entre compra/venta (0.10 = 0.10%)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border/60 rounded-lg p-6 space-y-4">
+        <h3 className="font-semibold flex items-center gap-2">
+          🔄 Conversión Spot
+        </h3>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="spot_enabled" className="text-base">
+              Habilitada para Convert
+            </Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Si está apagado, la moneda no aparece en /convert
+            </p>
+          </div>
+          <Switch
+            id="spot_enabled"
+            checked={spotEnabled}
+            onCheckedChange={setSpotEnabled}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="spot_buy_price">
+              Precio compra manual (USDT)
+            </Label>
+            <Input
+              id="spot_buy_price"
+              name="spot_buy_price"
+              type="number"
+              step="any"
+              min="0"
+              placeholder="(usar current_price + spread)"
+              defaultValue={initial?.spot_buy_price ?? ""}
+              disabled={isPending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Precio cuando alguien convierte X USDT → esta moneda. Vacío = automático.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="spot_sell_price">
+              Precio venta manual (USDT)
+            </Label>
+            <Input
+              id="spot_sell_price"
+              name="spot_sell_price"
+              type="number"
+              step="any"
+              min="0"
+              placeholder="(usar current_price − spread)"
+              defaultValue={initial?.spot_sell_price ?? ""}
+              disabled={isPending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Precio cuando alguien convierte esta moneda → USDT. Vacío = automático.
             </p>
           </div>
         </div>

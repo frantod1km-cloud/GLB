@@ -40,6 +40,15 @@ export async function createCoinAction(formData: FormData): Promise<CoinResult> 
   const decimals = Number(formData.get("decimals"));
   const spreadPercent = Number(formData.get("spread_percent"));
   const isActive = formData.get("is_active") === "on";
+  const spotEnabled = formData.get("spot_enabled") === "on";
+  const spotBuyPriceRaw = formData.get("spot_buy_price");
+  const spotSellPriceRaw = formData.get("spot_sell_price");
+  const spotBuyPrice = spotBuyPriceRaw && String(spotBuyPriceRaw).trim() !== ""
+    ? Number(spotBuyPriceRaw)
+    : null;
+  const spotSellPrice = spotSellPriceRaw && String(spotSellPriceRaw).trim() !== ""
+    ? Number(spotSellPriceRaw)
+    : null;
 
   if (!symbol || !name) return { error: "Símbolo y nombre son obligatorios" };
   if (!/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol))
@@ -63,6 +72,9 @@ export async function createCoinAction(formData: FormData): Promise<CoinResult> 
       decimals: decimals || 4,
       spread_percent: spreadPercent || 0.1,
       is_active: isActive,
+      spot_enabled: spotEnabled,
+      spot_buy_price: spotBuyPrice,
+      spot_sell_price: spotSellPrice,
       created_by: auth.user!.id,
     })
     .select("id")
@@ -107,6 +119,7 @@ export async function updateCoinAction(
     decimals: "number",
     spread_percent: "number",
     is_active: "boolean",
+    spot_enabled: "boolean",
   };
 
   for (const [key, type] of Object.entries(fields)) {
@@ -115,6 +128,18 @@ export async function updateCoinAction(
     if (type === "number") updates[key] = Number(v);
     else if (type === "boolean") updates[key] = v === "on" || v === "true";
     else updates[key] = String(v);
+  }
+
+  // Spot prices: pueden ser null (vaciar el campo)
+  const spotBuyRaw = formData.get("spot_buy_price");
+  if (spotBuyRaw !== null) {
+    const v = String(spotBuyRaw).trim();
+    updates.spot_buy_price = v === "" ? null : Number(v);
+  }
+  const spotSellRaw = formData.get("spot_sell_price");
+  if (spotSellRaw !== null) {
+    const v = String(spotSellRaw).trim();
+    updates.spot_sell_price = v === "" ? null : Number(v);
   }
 
   // Validaciones
