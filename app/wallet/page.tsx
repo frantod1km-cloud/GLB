@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DashboardNav } from "@/components/dashboard/nav";
 import { WalletView } from "@/components/wallet/wallet-view";
 import { TransactionsList } from "@/components/wallet/transactions-list";
 
@@ -13,13 +12,6 @@ export default async function WalletPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, role, referral_code")
-    .eq("id", user.id)
-    .single();
-  if (!profile) redirect("/login");
 
   const admin = createAdminClient();
 
@@ -58,35 +50,32 @@ export default async function WalletPage() {
   const settings = settingsRes.data || {};
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardNav profile={profile} />
-      <main className="container py-8 max-w-4xl space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Wallet</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Gestioná tus saldos de Spot y Trading
-          </p>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Wallet</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Gestioná tus saldos de Spot y Trading
+        </p>
+      </div>
 
-        <WalletView
-          userId={user.id}
-          initialSpotHoldings={holdingsRes.data || []}
-          initialTradingBalance={Number(walletRes.data?.balance || 0)}
-          initialLockedBalance={Number(walletRes.data?.locked_balance || 0)}
-          coinPrices={coinPrices}
-          depositSettings={{
-            uiMode: settings.deposit_ui_mode || "simple",
-            walletAddress: settings.deposit_address || "",
-            minAmount: Number(settings.deposit_min || 10),
-            maxAmount: Number(settings.deposit_max || 100000),
-          }}
-        />
+      <WalletView
+        userId={user.id}
+        initialSpotHoldings={holdingsRes.data || []}
+        initialTradingBalance={Number(walletRes.data?.balance || 0)}
+        initialLockedBalance={Number(walletRes.data?.locked_balance || 0)}
+        coinPrices={coinPrices}
+        depositSettings={{
+          uiMode: settings.deposit_ui_mode || "simple",
+          walletAddress: settings.deposit_address || "",
+          minAmount: Number(settings.deposit_min || 10),
+          maxAmount: Number(settings.deposit_max || 100000),
+        }}
+      />
 
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Movimientos recientes</h2>
-          <TransactionsList transactions={txRes.data || []} />
-        </div>
-      </main>
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Movimientos recientes</h2>
+        <TransactionsList transactions={txRes.data || []} />
+      </div>
     </div>
   );
 }
