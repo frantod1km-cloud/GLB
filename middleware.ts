@@ -37,7 +37,9 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/wallet") ||
     path.startsWith("/admin") ||
     path.startsWith("/setup") ||
-    path.startsWith("/notifications");
+    path.startsWith("/notifications") ||
+    path.startsWith("/convert") ||
+    path.startsWith("/earn");
 
   // Sin sesión y ruta protegida → login
   if (!user && isProtected) {

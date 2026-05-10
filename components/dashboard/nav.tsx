@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TrendingUp, LogOut, Shield, Wallet, LayoutDashboard, Activity, History } from "lucide-react";
+import { TrendingUp, LogOut, Shield, Wallet, LayoutDashboard, Activity, History, Repeat, PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/app/actions/auth";
 import { NotificationsBell } from "@/components/notifications/notifications-bell";
@@ -17,7 +17,7 @@ interface DashboardNavProps {
 }
 
 export function DashboardNav({ profile }: DashboardNavProps) {
-  const isAdmin = profile.role === "admin";
+  const isAdmin = profile.role === "admin" || profile.role === "super_admin";
   const displayName = profile.full_name || profile.email.split("@")[0];
 
   return (
@@ -30,12 +30,18 @@ export function DashboardNav({ profile }: DashboardNavProps) {
           <span className="font-bold text-xl tracking-tight hidden sm:block">Golbit</span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-0.5 overflow-x-auto">
           <NavLink href="/dashboard" icon={<LayoutDashboard className="w-4 h-4" />}>
             Dashboard
           </NavLink>
           <NavLink href="/trading" icon={<Activity className="w-4 h-4" />}>
             Trading
+          </NavLink>
+          <NavLink href="/convert" icon={<Repeat className="w-4 h-4" />}>
+            Convertir
+          </NavLink>
+          <NavLink href="/earn" icon={<PiggyBank className="w-4 h-4" />}>
+            Earn
           </NavLink>
           <NavLink href="/trading/historial" icon={<History className="w-4 h-4" />}>
             Historial
@@ -88,7 +94,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-secondary/50 transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-secondary/50 transition-colors whitespace-nowrap"
     >
       {icon}
       <span className="hidden sm:inline">{children}</span>
