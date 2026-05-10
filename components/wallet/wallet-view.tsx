@@ -19,10 +19,6 @@ import {
   ArrowLeftRight,
   Loader2,
   AlertCircle,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  Repeat,
-  PiggyBank,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -206,7 +202,7 @@ export function WalletView({
       </div>
 
       {/* Acciones rápidas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <DepositDialog
           uiMode={depositSettings.uiMode}
           walletAddress={depositSettings.walletAddress}
@@ -218,18 +214,6 @@ export function WalletView({
           minAmount={depositSettings.minAmount}
           maxAmount={depositSettings.maxAmount}
         />
-        <Button asChild variant="outline" className="h-auto py-3 flex-col gap-1">
-          <Link href="/convert">
-            <Repeat className="w-4 h-4" />
-            Convertir
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="h-auto py-3 flex-col gap-1">
-          <Link href="/earn">
-            <PiggyBank className="w-4 h-4" />
-            Earn
-          </Link>
-        </Button>
       </div>
 
       {/* Tabs */}
