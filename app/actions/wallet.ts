@@ -70,15 +70,18 @@ export async function requestWithdrawalAction(formData: FormData): Promise<Walle
 
 /**
  * Aprobar transacción (admin) - descuenta de su saldo si es admin normal
+ * destination: 'spot' (default) | 'trading' - solo aplica para deposits
  */
 export async function approveTransactionAction(
   transactionId: string,
+  destination: "spot" | "trading" = "spot",
   notes?: string
 ): Promise<WalletResult> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("approve_transaction", {
     p_transaction_id: transactionId,
     p_action: "approve",
+    p_destination: destination,
   });
 
   if (error) return { error: error.message };
